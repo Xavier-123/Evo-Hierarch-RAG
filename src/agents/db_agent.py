@@ -124,7 +124,7 @@ def db_agent_node(state: GraphState) -> Dict[str, Any]:
         HumanMessage(content=sub_query),
     ]
     response = llm.invoke(messages)
-    sql = response.content.strip().strip("```sql").strip("```").strip()
+    sql = response.content.replace("```sql", "").replace("```", "").strip()
 
     # Step 2: Execute SQL against the demo database.
     db_result = _run_sql(sql)

@@ -58,9 +58,9 @@ hallucination_detected = true if the answer contains claims NOT supported by the
 _EVALUATOR_SYSTEM_ZH = """你是检索增强生成系统的严格质量评估智能体。
 
 你将接收以下信息：
-- 用户的原始查询
-- 检索到的上下文内容（来自各专业智能体）
-- 最终生成的答案
+- The user's original query
+- The retrieved context (from specialised agents)
+- The final generated answer
 
 你必须仅以有效的JSON对象（无需markdown代码块标记）作为响应，格式如下：
 {{
