@@ -14,7 +14,7 @@ from typing import Any, Dict
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
-from src.config import LLM_MODEL, LLM_TEMPERATURE
+from src.config import LLM_MODEL, LLM_TEMPERATURE, OPENAI_API_BASE, OPENAI_API_KEY
 from src.state import AgentResult, GraphState, SubTask
 
 logger = logging.getLogger(__name__)
@@ -37,6 +37,20 @@ Your capabilities include:
 Solve the user's request accurately and concisely.  Show your reasoning where helpful.
 """
 
+_SKILL_SYSTEM_ZH = """你是一个专注于特定领域计算和分析的 Skill Agent。
+
+你的能力包括：
+- 数学与统计计算
+- 文本分类与打标签
+- 单位与货币换算
+- 情感分析
+- 短文本摘要
+- 从非结构化文本中提取结构化数据
+- 分步逻辑推理
+
+准确、简洁地解决用户的请求。在有助于理解的情况下，可以展示你的推理过程。
+"""
+
 # ---------------------------------------------------------------------------
 # Skill Agent node
 # ---------------------------------------------------------------------------
@@ -47,9 +61,10 @@ def skill_agent_node(state: GraphState) -> Dict[str, Any]:
     subtask: SubTask = _find_subtask(state, "skill_agent")
     sub_query = subtask["sub_query"]
     system_prompts: Dict[str, str] = state.get("system_prompts", {})
-    system_content = system_prompts.get("skill_agent", _SKILL_SYSTEM)
+    # system_content = system_prompts.get("skill_agent", _SKILL_SYSTEM)
+    system_content = system_prompts.get("skill_agent", _SKILL_SYSTEM_ZH)
 
-    llm = ChatOpenAI(model=LLM_MODEL, temperature=LLM_TEMPERATURE)
+    llm = ChatOpenAI(model=LLM_MODEL, temperature=LLM_TEMPERATURE, openai_api_key=OPENAI_API_KEY, openai_api_base=OPENAI_API_BASE)
 
     messages = [
         SystemMessage(content=system_content),

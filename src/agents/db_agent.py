@@ -15,7 +15,7 @@ from typing import Any, Dict
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
-from src.config import LLM_MODEL, LLM_TEMPERATURE
+from src.config import LLM_MODEL, LLM_TEMPERATURE, OPENAI_API_BASE, OPENAI_API_KEY
 from src.state import AgentResult, GraphState, SubTask
 
 logger = logging.getLogger(__name__)
@@ -95,6 +95,13 @@ Given a user question, generate a single valid SQLite SELECT statement that
 answers it.  Return ONLY the SQL statement, no commentary, no markdown fences.
 """
 
+_DB_SYSTEM_ZH = """你是一个SQL数据库智能体，可以访问以下数据表：
+- products (id, name, price, stock, category)
+- orders (id, product_id, quantity, total, customer, order_date)
+
+根据用户的问题，生成一条有效的SQLite SELECT查询语句来回答该问题。仅返回SQL语句，不要包含任何解释，也不要使用markdown代码块标记。
+"""
+
 
 # ---------------------------------------------------------------------------
 # DB Agent node
@@ -106,9 +113,10 @@ def db_agent_node(state: GraphState) -> Dict[str, Any]:
     subtask: SubTask = _find_subtask(state, "db_agent")
     sub_query = subtask["sub_query"]
     system_prompts: Dict[str, str] = state.get("system_prompts", {})
-    system_content = system_prompts.get("db_agent", _DB_SYSTEM)
+    # system_content = system_prompts.get("db_agent", _DB_SYSTEM)
+    system_content = system_prompts.get("db_agent", _DB_SYSTEM_ZH)
 
-    llm = ChatOpenAI(model=LLM_MODEL, temperature=LLM_TEMPERATURE)
+    llm = ChatOpenAI(model=LLM_MODEL, temperature=LLM_TEMPERATURE, openai_api_key=OPENAI_API_KEY, openai_api_base=OPENAI_API_BASE)
 
     # Step 1: LLM generates SQL.
     messages = [

@@ -98,9 +98,9 @@ def main() -> None:
     args = parser.parse_args()
 
     demo_queries = [
-        "What products do we have in stock and what are their prices?",
-        "What are the latest breakthroughs in large language model research?",
-        "Calculate the total revenue from all orders and show the top customer by spending.",
+        "大型语言模型研究的最新突破是什么？",
+        # "我们有什么库存产品，价格是多少？",
+        # "计算所有订单的总收入，并按支出显示顶级客户。",
     ]
 
     queries_to_run = [args.query] if args.query else demo_queries

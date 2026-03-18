@@ -23,7 +23,7 @@ from typing import Any, Dict
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
-from src.config import LLM_MODEL, LLM_TEMPERATURE, RELEVANCY_THRESHOLD
+from src.config import LLM_MODEL, LLM_TEMPERATURE, RELEVANCY_THRESHOLD, OPENAI_API_BASE, OPENAI_API_KEY
 from src.state import FailedCase, GraphState
 
 logger = logging.getLogger(__name__)
@@ -54,6 +54,29 @@ Scoring guide:
 hallucination_detected = true if the answer contains claims NOT supported by the context.
 """
 
+
+_EVALUATOR_SYSTEM_ZH = """你是检索增强生成系统的严格质量评估智能体。
+
+你将接收以下信息：
+- 用户的原始查询
+- 检索到的上下文内容（来自各专业智能体）
+- 最终生成的答案
+
+你必须仅以有效的JSON对象（无需markdown代码块标记）作为响应，格式如下：
+{{
+"relevancy_score": <浮点数 0.0–1.0>,
+"hallucination_detected": <true|false>,
+"feedback": "<简要说明>"
+}}
+
+评分标准：
+- relevancy_score >= 0.8 ：上下文内容直接且全面地回答了查询。
+- relevancy_score 0.6–0.79：上下文内容部分地回答了查询。
+- relevancy_score < 0.6 ：上下文内容基本与查询无关。
+
+hallucination_detected 为 true 的条件：答案中包含上下文内容所不支持的表述。
+"""
+
 # ---------------------------------------------------------------------------
 # Evaluator node
 # ---------------------------------------------------------------------------
@@ -65,9 +88,10 @@ def evaluator_node(state: GraphState) -> Dict[str, Any]:
     context = state.get("aggregated_context", "")
     final_answer = state.get("final_answer", "")
 
-    llm = ChatOpenAI(model=LLM_MODEL, temperature=LLM_TEMPERATURE)
+    llm = ChatOpenAI(model=LLM_MODEL, temperature=LLM_TEMPERATURE, openai_api_key=OPENAI_API_KEY, openai_api_base=OPENAI_API_BASE)
     messages = [
-        SystemMessage(content=_EVALUATOR_SYSTEM),
+        # SystemMessage(content=_EVALUATOR_SYSTEM),
+        SystemMessage(content=_EVALUATOR_SYSTEM_ZH),
         HumanMessage(
             content=(
                 f"Original query: {original_query}\n\n"

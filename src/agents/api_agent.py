@@ -17,7 +17,7 @@ from urllib.parse import urljoin
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
-from src.config import API_AGENT_BASE_URL, LLM_MODEL, LLM_TEMPERATURE
+from src.config import API_AGENT_BASE_URL, LLM_MODEL, LLM_TEMPERATURE, OPENAI_API_BASE, OPENAI_API_KEY
 from src.state import AgentResult, GraphState, SubTask
 
 logger = logging.getLogger(__name__)
@@ -43,6 +43,26 @@ Given a user question, respond with **only** a JSON object:
 }}
 No commentary, no markdown fences.
 """
+
+_API_SYSTEM_ZH = """你是一个知道如何调用企业REST API的API Agent。
+
+Available endpoints on {base_url}:
+    GET /users           — 列出所有用户
+    GET /users/{{id}}    — 获取特定用户信息
+    GET /reports/summary — 获取业务摘要报告
+    GET /inventory       — 获取当前库存水平
+    GET /metrics         — 获取关键绩效指标
+
+根据用户的问题，仅以JSON对象作为响应：
+{{
+    "method": "GET",
+    "path": "/endpoint",
+    "params": {{}}
+}}
+不要包含任何解释，也不要使用markdown代码块标记。
+"""
+
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -110,10 +130,11 @@ def api_agent_node(state: GraphState) -> Dict[str, Any]:
     sub_query = subtask["sub_query"]
     system_prompts: Dict[str, str] = state.get("system_prompts", {})
     system_content = system_prompts.get(
-        "api_agent", _API_SYSTEM.format(base_url=API_AGENT_BASE_URL)
+        # "api_agent", _API_SYSTEM.format(base_url=API_AGENT_BASE_URL)
+        "api_agent", _API_SYSTEM_ZH.format(base_url=API_AGENT_BASE_URL)
     )
 
-    llm = ChatOpenAI(model=LLM_MODEL, temperature=LLM_TEMPERATURE)
+    llm = ChatOpenAI(model=LLM_MODEL, temperature=LLM_TEMPERATURE, openai_api_key=OPENAI_API_KEY, openai_api_base=OPENAI_API_BASE)
 
     # Step 1: LLM decides which API endpoint to call.
     messages = [

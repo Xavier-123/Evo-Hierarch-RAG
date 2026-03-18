@@ -14,6 +14,7 @@ load_dotenv()
 # LLM
 # ---------------------------------------------------------------------------
 OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+OPENAI_API_BASE: str = os.getenv("OPENAI_API_BASE", "")
 LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-4o-mini")
 LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.0"))
 

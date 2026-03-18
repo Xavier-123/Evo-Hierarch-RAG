@@ -26,6 +26,8 @@ from src.config import (
     AGENT_SKILL,
     LLM_MODEL,
     LLM_TEMPERATURE,
+    OPENAI_API_KEY,
+    OPENAI_API_BASE,
     MAX_RETRIES,
     VALID_AGENTS,
 )
@@ -69,6 +71,38 @@ Rules:
 - sub_query should be a self-contained question or instruction for the target agent.
 """
 
+_SUPERVISOR_SYSTEM_ZH = """你是分层智能检索增强生成系统的监管智能体。
+你的职责是：
+1. 理解用户的查询内容。
+2. 确定需要哪些专业智能体来回答问题。
+3. 将查询分解为具体的子任务，每个子任务对应一个智能体。
+
+可用智能体及其职责：
+- db_agent：查询结构化SQL/关系型数据库，获取事实性、数值性或表格数据。
+- api_agent：调用外部/企业内部REST API，获取专有或特定服务的数据。
+- skill_agent：执行特定领域技能（如计算、分类、总结等）。
+- research_agent：搜索互联网，获取实时、突发或开放领域信息。
+
+你必须仅以有效的JSON对象（无需markdown代码块标记）作为响应，格式必须严格符合以下结构：
+{{
+"routing_decision": ["<智能体名称1>", "<智能体名称2>", ...],
+"subtasks": [
+{{
+"task_id": "t1",
+"description": "<人类可读的任务描述>",
+"agent": "<智能体名称>",
+"sub_query": "<针对该智能体的具体查询>"
+}},
+...
+]
+}}
+
+规则：
+- 只包含真正需要的智能体。
+- routing_decision中的每个智能体必须对应一个且只有一个子任务。
+- sub_query应当是一个针对目标智能体的、可以独立处理的问题或指令。
+"""
+
 # ---------------------------------------------------------------------------
 # Supervisor node
 # ---------------------------------------------------------------------------
@@ -81,7 +115,8 @@ def supervisor_node(state: GraphState) -> Dict[str, Any]:
     few_shot_examples: List[Dict[str, str]] = state.get("few_shot_examples", [])
 
     # Allow the Prompt Optimizer to override the supervisor's system prompt.
-    system_content = system_prompts.get("supervisor", _SUPERVISOR_SYSTEM)
+    # system_content = system_prompts.get("supervisor", _SUPERVISOR_SYSTEM)
+    system_content = system_prompts.get("supervisor", _SUPERVISOR_SYSTEM_ZH)
 
     # Build few-shot block if we have examples.
     few_shot_block = ""
@@ -92,7 +127,7 @@ def supervisor_node(state: GraphState) -> Dict[str, Any]:
         )
         few_shot_block = f"\n\nExamples from previous runs:\n{examples}"
 
-    llm = ChatOpenAI(model=LLM_MODEL, temperature=LLM_TEMPERATURE)
+    llm = ChatOpenAI(model=LLM_MODEL, temperature=LLM_TEMPERATURE, openai_api_key=OPENAI_API_KEY, openai_api_base=OPENAI_API_BASE)  # Use default OpenAI base URL
 
     messages = [
         SystemMessage(content=system_content + few_shot_block),

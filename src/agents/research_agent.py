@@ -13,7 +13,7 @@ from typing import Any, Dict, List
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
-from src.config import LLM_MODEL, LLM_TEMPERATURE, TAVILY_API_KEY
+from src.config import LLM_MODEL, LLM_TEMPERATURE, TAVILY_API_KEY, OPENAI_API_BASE, OPENAI_API_KEY
 from src.state import AgentResult, GraphState, SubTask
 
 logger = logging.getLogger(__name__)
@@ -26,6 +26,11 @@ _RESEARCH_SYSTEM = """You are a Research Agent with access to real-time web sear
 
 Given the retrieved search snippets and the user's question, synthesise a
 concise, factual answer.  Cite the source URLs where relevant.
+"""
+
+_RESEARCH_SYSTEM_ZH = """你是一个能够获取实时网络搜索结果的 Research Agent。
+
+根据检索到的搜索结果片段和用户的问题，整合出一个简洁、基于事实的答案。在相关情况下，引用信息来源的URL。
 """
 
 # ---------------------------------------------------------------------------
@@ -75,14 +80,15 @@ def research_agent_node(state: GraphState) -> Dict[str, Any]:
     subtask: SubTask = _find_subtask(state, "research_agent")
     sub_query = subtask["sub_query"]
     system_prompts: Dict[str, str] = state.get("system_prompts", {})
-    system_content = system_prompts.get("research_agent", _RESEARCH_SYSTEM)
+    # system_content = system_prompts.get("research_agent", _RESEARCH_SYSTEM)
+    system_content = system_prompts.get("research_agent", _RESEARCH_SYSTEM_ZH)
 
     # Step 1: Web search.
     search_results = _tavily_search(sub_query)
     context = _format_search_results(search_results)
 
     # Step 2: LLM synthesises the answer from search snippets.
-    llm = ChatOpenAI(model=LLM_MODEL, temperature=LLM_TEMPERATURE)
+    llm = ChatOpenAI(model=LLM_MODEL, temperature=LLM_TEMPERATURE, openai_api_key=OPENAI_API_KEY, openai_api_base=OPENAI_API_BASE)
     messages = [
         SystemMessage(content=system_content),
         HumanMessage(
